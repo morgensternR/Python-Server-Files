@@ -27,7 +27,7 @@ topic = 'graph'
 
 # Read config json (diode in this case), build csv with header
 config = ujson.load(open('diode_config.json', 'r'))
-file = open("thermometry_log_{0}.csv".format(date.today(), encoding = 'utf-8'), "a")
+file = open("thermometry_log_ON_{0}.csv".format(date.today(), encoding = 'utf-8'), "a")
 
 with file as csvfile:
     fieldnames = ['TIME']
