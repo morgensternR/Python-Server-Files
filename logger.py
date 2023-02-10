@@ -1,4 +1,3 @@
-#%%
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
 #Logger
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
@@ -8,7 +7,7 @@ import ujson
 from datetime import date
 import time
 import csv
-
+import os
 
 # Socket to talk to Server
 Logger = zmq.Context()
@@ -27,15 +26,19 @@ topic = 'graph'
 
 # Read config json (diode in this case), build csv with header
 config = ujson.load(open('diode_config.json', 'r'))
-file = open("thermometry_log_ON_{0}.csv".format(date.today(), encoding = 'utf-8'), "a")
+file = open("thermometry_log.csv", "a")
 
 with file as csvfile:
-    fieldnames = ['TIME']
-    for key in config['sensors']:
-        fieldnames.append(key)
-    writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
-    writer.writeheader()
-
+    if os.stat("thermometry_log.csv").st_size == 0:
+        print('Data log is empty, Creating Header \n' )
+        fieldnames = ['TIME']
+        for key in config['sensors']:
+            fieldnames.append(key)
+        writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+        writer.writeheader()
+    else:
+        print('Data log is Not empty, Just appending \n')
+        writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
     #Run True: Pull Data, Add time stamp to data, Publish data, write data to csv
     while True:
         data = ujson.loads(send_n_receive(b'read diode'))
