@@ -29,11 +29,11 @@ config = ujson.load(open('diode_config.json', 'r'))
 file = open("thermometry_log.csv", "a")
 
 with file as csvfile:
+    fieldnames = ['TIME']
+    for key in config['sensors']:
+        fieldnames.append(key)
     if os.stat("thermometry_log.csv").st_size == 0:
         print('Data log is empty, Creating Header \n' )
-        fieldnames = ['TIME']
-        for key in config['sensors']:
-            fieldnames.append(key)
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
         writer.writeheader()
     else:
