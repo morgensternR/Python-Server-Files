@@ -30,6 +30,8 @@ socket.setsockopt_string(zmq.SUBSCRIBE, topicfilter)
 # Start QtGui application
 print('Starting Plotting Window')
 app = QtGui.QApplication([])
+#pg.setConfigOptions(useOpenGL=True) #Tried adding this line to fix FPS issue WRT line width. Didn't help. Also disables antialiasing 
+
 
 # Window formatting
 win = pg.GraphicsLayoutWidget(show=True, title="Thermometry Plotter")
@@ -63,13 +65,14 @@ def init(log_file):
     curves = {}
     color_map = get_cmap('hsv', len(log_file.keys()) - 1)
     idx = 0
+    line_width = 1 #1 is default, Anything bigger than 1 causes massive FPS issues https://github.com/pyqtgraph/pyqtgraph/issues/533
     for key in log_file:
         if key != 'TIME':
             color = tuple((np.array(color_map(idx))*255).astype(int))
             if key == '4K' or key == '40K':
-                curves[key] = p0.plot(log_file['TIME'], dt670_func(log_file[key]), name = key, pen = color)#, symbol = 'o', symbolSize = 1)
+                curves[key] = p0.plot(log_file['TIME'], dt670_func(log_file[key]), name = key, pen = {'color': color, 'width' : line_width} )#, symbol = 'o', symbolSize = 1)
             else:
-                curves[key] = p0.plot(log_file['TIME'], dc2018_func(log_file[key]), name = key, pen = color)#, symbol = 'o' , symbolSize = 1)
+                curves[key] = p0.plot(log_file['TIME'], dc2018_func(log_file[key]), name = key, pen = {'color': color, 'width' : line_width} )#, symbol = 'o' , symbolSize = 1)
             idx += 1
     p0.enableAutoRange('xy', False)
     return curves
