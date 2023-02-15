@@ -32,9 +32,9 @@ print('Starting Plotting Window')
 app = QtGui.QApplication([])
 
 # Window formatting
-win = pg.GraphicsLayoutWidget(show=True, title="Basic plotting examples")
+win = pg.GraphicsLayoutWidget(show=True, title="Thermometry Plotter")
 win.resize(1000,1000)
-win.setWindowTitle('pyqtgraph example: Plotting')
+win.setWindowTitle('Thermometry Realtime Plotter')
 label = pg.LabelItem(justify='right')
 win.addItem(label)
 
