@@ -140,9 +140,7 @@ data_getter.start()#Starts thread
 
 #cross hair
 vLine = pg.InfiniteLine(angle=90, movable=False)
-hLine = pg.InfiniteLine(angle=0, movable=False)
 p0.addItem(vLine, ignoreBounds=True)
-p0.addItem(hLine, ignoreBounds=True)
 vb = p0.vb
 
 def find_largest_index_less_than(data, x_value):
@@ -168,10 +166,8 @@ def mouseMoved(evt):
         for label in labels_dict:
             y_value = curves[label].getData()[1][index]
             labels_dict[label].setText(f"{label}: {y_value:.2f} ")
-        #label.setText(f"{mousePoint.x()} {x_value} {y_value}")
-        #label.setText('label1')
         vLine.setPos(x_value)
-        #hLine.setPos(y_value)
+        
 proxy = pg.SignalProxy(p0.scene().sigMouseMoved, rateLimit=60, slot=mouseMoved)
 
 
@@ -182,7 +178,5 @@ if __name__ == '__main__':
     if (sys.flags.interactive != 1) or not hasattr(QtCore, 'PYQT_VERSION'):
         QtGui.QApplication.instance().exec_() #Starts own thread for GUI
 
-#%%
-import pyqtgraph.examples
-pyqtgraph.examples.run()
+
 
