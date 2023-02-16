@@ -146,11 +146,15 @@ p0.addItem(hLine, ignoreBounds=True)
 vb = p0.vb
 
 def find_largest_index_less_than(data, x_value):
-  indices = np.where(data<x_value)[0]
-  array_data_values_less_than_5 = data[indices]
-  index_of_largest_Value = array_data_values_less_than_5.argmax()
-  index_of_largest_Value_in_OG_Data = indices[index_of_largest_Value]
-  return index_of_largest_Value_in_OG_Data
+    try:
+        indices = np.where(data<x_value)[0]
+        array_data_values_less_than_5 = data[indices]
+        index_of_largest_Value = array_data_values_less_than_5.argmax()
+        index_of_largest_Value_in_OG_Data = indices[index_of_largest_Value]
+        return index_of_largest_Value_in_OG_Data
+    except:
+        return len(data)-1
+
 
 
 def mouseMoved(evt):
