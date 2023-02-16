@@ -9,8 +9,6 @@ import matplotlib.dates as mdates
 import zmq
 import ujson
 from pyqtgraph.Qt import QtGui, QtCore
-from PyQt5.QtWidgets import QApplication, QWIDGETSIZE_MAX
-from pyqtgraph.Point import Point
 import pyqtgraph as pg
 import pandas
 from scipy.interpolate import interp1d
@@ -18,6 +16,7 @@ from scipy.interpolate import interp1d
 # Make Subscriber to Publisher with 'graph' set topic...       
 def receive_data(socket, topicfilter):
     return ujson.loads(socket.recv().decode().split(topicfilter)[1].strip()) 
+
 print('Starting SUB Socket')
 port = "5556"
 context = zmq.Context()
