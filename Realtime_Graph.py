@@ -8,7 +8,7 @@ from matplotlib.cm import get_cmap
 import matplotlib.dates as mdates
 import zmq
 import ujson
-from pyqtgraph.Qt import QtGui, QtCore
+from pyqtgraph.Qt import QtGui, QtCore, QtWidgets
 import pyqtgraph as pg
 import pandas
 from scipy.interpolate import interp1d
@@ -36,20 +36,21 @@ app = QtGui.QApplication([])
 win = pg.GraphicsLayoutWidget(show=True, title="Thermometry Plotter")
 win.resize(1000,1000)
 win.setWindowTitle('Thermometry Realtime Plotter')
-label = pg.LabelItem(justify='right')
-win.addItem(label)
 
 # Enable antialiasing for prettier plots
 pg.setConfigOptions(antialias=True)
 
 # Plot labeling
-p0 = win.addPlot(title="Thermometry Realtime + Log")
+p0 = win.addPlot(title="Thermometry Realtime + Log", row = 0, col = 0)
 p0.showGrid(x = True, y = True)
 p0.setLabel('left', 'Temperature (K)')
 date_axis = pg.DateAxisItem(orientation='bottom')
 p0.setAxisItems(({'bottom': date_axis}) )
 p0.setLabel('bottom', 'Date and Time (test)')
 p0.addLegend()
+
+
+
 
 # Import log file and calibration files. Change directory Here
 print('Importing current Log File')
@@ -80,6 +81,36 @@ def init(log_file):
 #Making curve dictionary with sensor keys and plot values
 print('Plotting current Log file')
 curves = init(log_file)
+
+
+# create a QGraphicsProxy Widget so we can add it to the plots
+#   It will contain a widget with a bunch of labels and a button
+proxy = QtWidgets.QGraphicsProxyWidget()
+
+# create a widget (w) that will be actual contain all the labels and buttons
+w = QtWidgets.QWidget()
+# create a layout for the widget
+layout = QtWidgets.QGridLayout()
+w.setLayout(layout)
+# create button and labels... add them to w
+button = QtWidgets.QPushButton('button')
+labels_dict = {}
+for key in curves:# 
+    label = QtWidgets.QLabel(f'{key}:')
+    labels_dict[key] = label
+
+layout.addWidget(button, 0, 0)
+row = 1
+for label in labels_dict:
+    layout.addWidget(labels_dict[label], row, 0)
+    row = row+1
+# Set proxy to be the widget w
+proxy.setWidget(w)
+# add proxy widget to graphics layout widget
+p1 = win.addItem(proxy)
+
+
+
 
 def update(data):
     global curves 
@@ -112,18 +143,33 @@ vLine = pg.InfiniteLine(angle=90, movable=False)
 hLine = pg.InfiniteLine(angle=0, movable=False)
 p0.addItem(vLine, ignoreBounds=True)
 p0.addItem(hLine, ignoreBounds=True)
-
-
 vb = p0.vb
 
+def find_largest_index_less_than(data, x_value):
+  indices = np.where(data<x_value)[0]
+  array_data_values_less_than_5 = data[indices]
+  index_of_largest_Value = array_data_values_less_than_5.argmax()
+  index_of_largest_Value_in_OG_Data = indices[index_of_largest_Value]
+  return index_of_largest_Value_in_OG_Data
+
+
 def mouseMoved(evt):
-    global curves
+    global curves, labels
     pos = evt[0]  ## using signal proxy turns original arguments into a tuple
     if p0.sceneBoundingRect().contains(pos):
         mousePoint = vb.mapSceneToView(pos)
-        vLine.setPos(mousePoint.x())
-        hLine.setPos(mousePoint.y())
+        index = find_largest_index_less_than(curves['4K'].getData()[0], mousePoint.x())
+        x_value = curves['4K'].getData()[0][index]
+        
+        for label in labels_dict:
+            y_value = curves[label].getData()[1][index]
+            labels_dict[label].setText(f"{label}: {y_value:.2f} ")
+        #label.setText(f"{mousePoint.x()} {x_value} {y_value}")
+        #label.setText('label1')
+        vLine.setPos(x_value)
+        #hLine.setPos(y_value)
 proxy = pg.SignalProxy(p0.scene().sigMouseMoved, rateLimit=60, slot=mouseMoved)
+
 
 
 
@@ -132,4 +178,7 @@ if __name__ == '__main__':
     if (sys.flags.interactive != 1) or not hasattr(QtCore, 'PYQT_VERSION'):
         QtGui.QApplication.instance().exec_() #Starts own thread for GUI
 
+#%%
+import pyqtgraph.examples
+pyqtgraph.examples.run()
 
