@@ -12,6 +12,8 @@ from pyqtgraph.Qt import QtGui, QtCore, QtWidgets
 import pyqtgraph as pg
 import pandas
 from scipy.interpolate import interp1d
+import datetime
+
 
 # Make Subscriber to Publisher with 'graph' set topic...       
 def receive_data(socket, topicfilter):
@@ -61,26 +63,28 @@ dt670 = np.loadtxt('L:/ryan_python/DT670.csv',  delimiter =',', dtype=float)
 dt670_func = interp1d(dt670[:,1], dt670[:,0])
 dc2018_func = interp1d(dc2018[:,1], dc2018[:,0])
 
-def init(log_file):
-    curves = {}
-    color_map = get_cmap('hsv', len(log_file.keys()) - 1)
-    idx = 0
-    line_width = 1 #1 is default, Anything bigger than 1 causes massive FPS issues https://github.com/pyqtgraph/pyqtgraph/issues/533
-    for key in log_file:
-        if key != 'TIME':
-            color = tuple((np.array(color_map(idx))*255).astype(int))
-            if key == '4K' or key == '40K':
-                curves[key] = p0.plot(log_file['TIME'], dt670_func(log_file[key]), name = key, pen = {'color': color, 'width' : line_width} )#, symbol = 'o', symbolSize = 1)
-            else:
-                curves[key] = p0.plot(log_file['TIME'], dc2018_func(log_file[key]), name = key, pen = {'color': color, 'width' : line_width} )#, symbol = 'o' , symbolSize = 1)
-            idx += 1
-    p0.enableAutoRange('xy', False)
-    return curves
+
+curves = {}
+color_map = get_cmap('hsv', len(log_file.keys()) - 1)
+idx = 0
+line_width = 1 #1 is default, Anything bigger than 1 causes massive FPS issues https://github.com/pyqtgraph/pyqtgraph/issues/533
+for key in log_file:
+    if key != 'TIME':
+        color = tuple((np.array(color_map(idx))*255).astype(int))
+        if key == '4K' or key == '40K':
+            valid_data_bool = log_file[key] < dt670[-1][1]
+            curves[key] = p0.plot(log_file['TIME'][valid_data_bool], dt670_func(log_file[key][valid_data_bool]), name = key, pen = {'color': color, 'width' : line_width} )#, symbol = 'o', symbolSize = 1)
+        else:
+            valid_data_bool = log_file[key] < dc2018[-1][1]
+            curves[key] = p0.plot(log_file['TIME'][valid_data_bool], dc2018_func(log_file[key][valid_data_bool]), name = key, pen = {'color': color, 'width' : line_width} )#, symbol = 'o' , symbolSize = 1)
+        idx += 1
+p0.enableAutoRange('xy', False)
+
 
 
 #Making curve dictionary with sensor keys and plot values
 print('Plotting current Log file')
-curves = init(log_file)
+
 
 
 # create a QGraphicsProxy Widget so we can add it to the plots
@@ -93,24 +97,29 @@ w = QtWidgets.QWidget()
 layout = QtWidgets.QGridLayout()
 w.setLayout(layout)
 # create button and labels... add them to w
-button = QtWidgets.QPushButton('button')
+time_label = QtWidgets.QLabel('time')
+# Set minimum size for the Qlabel so that the window doesn't change sizes as labels are updated
+#   This causes stutter/glitches when the mouse events are handled (on my mac laptop)
+time_label.setMinimumSize(225, 20)
+#time_label.setStyleSheet("border: 1px solid black;")
+
 labels_dict = {}
-for key in curves:# 
+
+row = 1
+
+for key in log_file:# 
     label = QtWidgets.QLabel(f'{key}:')
     labels_dict[key] = label
-
-layout.addWidget(button, 0, 0)
-row = 1
-for label in labels_dict:
-    layout.addWidget(labels_dict[label], row, 0)
+    layout.addWidget(labels_dict[key], row, 0)
     row = row+1
+
 # Set proxy to be the widget w
 proxy.setWidget(w)
 # add proxy widget to graphics layout widget
 p1 = win.addItem(proxy)
 
 
-
+print(len(curves))
 
 def update(data):
     global curves 
@@ -124,17 +133,17 @@ def update(data):
             
             curve.setData(x,y)
     
-## Start Qt event loop unless running in interactive mode or using pyside.
-class get_data_thread(pg.QtCore.QThread): #Starts QThread for data polling
-    newData = pg.QtCore.Signal(dict) #Defines signal data type
+
+class get_data_thread(pg.QtCore.QThread): 
+    newData = pg.QtCore.Signal(dict) #Defines newData data type
     def run(self):
         while True:
             sensor_data = receive_data(socket, topicfilter)
             # do NOT plot data from here!
-            self.newData.emit(sensor_data) #Emits signal to new.connect(slot)
+            self.newData.emit(sensor_data) #Emits signal to connected slots
             
 data_getter = get_data_thread()
-data_getter.newData.connect(update) #Emits signal to update slot
+data_getter.newData.connect(update) #Connects signal to update slot
 data_getter.start()#Starts thread
 
 
@@ -142,6 +151,7 @@ data_getter.start()#Starts thread
 vLine = pg.InfiniteLine(angle=90, movable=False)
 p0.addItem(vLine, ignoreBounds=True)
 vb = p0.vb
+vline_idx = -1
 
 def find_largest_index_less_than(data, x_value):
     try:
@@ -151,24 +161,71 @@ def find_largest_index_less_than(data, x_value):
         index_of_largest_Value_in_OG_Data = indices[index_of_largest_Value]
         return index_of_largest_Value_in_OG_Data
     except:
-        return len(data)-1
+        return 0
 
-
-
+def update_vline_labels(index):
+     for label in labels_dict:
+            if label == 'TIME':
+                time_stamp = curves['4K'].getData()[0][index]
+                datestr = datetime.datetime.fromtimestamp(time_stamp).strftime('%c')
+                labels_dict[label].setText(f"{label}: {datestr} ")
+            else:
+                time_stamp_dict = curves[label].getData()[0]
+                ts_mouse_chosen = curves["4K"].getData()[0][index]
+                if len(np.where(time_stamp_dict==ts_mouse_chosen)[0]):
+                    y_value = curves[label].getData()[1][index]
+                    labels_dict[label].setText(f'{label}: {y_value:.2f}')
+                else:
+                    labels_dict[label].setText(f'{label}: INVALID');
+                
+USE_PROXY = False
 def mouseMoved(evt):
-    global curves, labels
-    pos = evt[0]  ## using signal proxy turns original arguments into a tuple
+    global curves, labels, vline_idx
+    if USE_PROXY:
+    # If using proxy, pos is defined below 
+        pos = evt[0]  ## using signal proxy turns original arguments into a tuple
+    else:
+        pos = evt
+        
     if p0.sceneBoundingRect().contains(pos):
         mousePoint = vb.mapSceneToView(pos)
         index = find_largest_index_less_than(curves['4K'].getData()[0], mousePoint.x())
         x_value = curves['4K'].getData()[0][index]
-        
-        for label in labels_dict:
-            y_value = curves[label].getData()[1][index]
-            labels_dict[label].setText(f"{label}: {y_value:.2f} ")
+        update_vline_labels(index)
         vLine.setPos(x_value)
+        vline_idx = index
         
-proxy = pg.SignalProxy(p0.scene().sigMouseMoved, rateLimit=60, slot=mouseMoved)
+if USE_PROXY:
+    proxy = pg.SignalProxy(p0.scene().sigMouseMoved, rateLimit=60, slot=mouseMoved)
+else:
+    p0.scene().sigMouseMoved.connect(mouseMoved)
+    
+
+#  Hack to add keyPressEvent processing... better way would be to create a new class for 
+#  the GraphicsLayoutWidget...  like here: 
+#      https://stackoverflow.com/questions/40423999/pyqtgraph-where-to-find-signal-for-key-preses
+#  The hack is ok for this program, but may not work in general
+
+old_kpe = p0.scene().keyPressEvent
+scene = p0.scene()
+def new_kpe(event):
+    old_kpe(event)
+    global vline_idx
+    print(vline_idx)
+    if vline_idx >=0:
+        if event.key()==0x01000012:
+            #  print('Left')
+            vline_idx = vline_idx - 1 if vline_idx > 0 else 0
+            update_vline_labels(vline_idx)
+        elif event.key()==0x01000014:
+            #  print('Right')
+            max_idx = len(curves['4K'].getData()[0]) - 1
+            vline_idx = vline_idx + 1 if vline_idx < (max_idx) else max_idx 
+            update_vline_labels(vline_idx)
+        vLine.setPos(curves['4K'].getData()[0][vline_idx])
+    #print('new_kp', event.key())
+
+scene.keyPressEvent = new_kpe
 
 
 
