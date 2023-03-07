@@ -6,22 +6,30 @@ class heater:
         self.port = usb_port
     
     def read(self):
-        heat_meas = []
-        for i in range(4):
-            string = 'mon? {0}\r\n'.format(i)
-            self.port.write(bytes(string, 'utf-8'))
-            temp_data = ujson.loads(self.port.readline())
-            heat_meas.append([temp_data[0], temp_data[1]])
+        heat_meas_dict = {}
+        try:
+            for i in range(4):
+                string = f'mon? {i}\r\n'            
+                self.port.write(bytes(string, 'utf-8'))
+                temp_data = ujson.loads(self.port.readline())
+                key, items = list(temp_data.items())[0]
+                heat_meas_dict[key] = items
+                time.sleep(0.1)
+            for i in range(1,6):
+                string = f'lph? {i}\r\n'
+                self.port.write(bytes(string, 'utf-8'))
+                temp_data = ujson.loads(self.port.readline())
+                key, items = list(temp_data.items())[0]
+                heat_meas_dict[key] = items
+                time.sleep(0.1)
             time.sleep(0.1)
-        for i in range(1,6):
-            string = 'lph? {0}\r\n'.format(i)
-            self.port.write(bytes(string, 'utf-8'))
-            temp_data = self.port.readline().decode().strip()
-            heat_meas.append(temp_data)
-            time.sleep(0.1)
-        
-        time.sleep(0.1)
-        return [element for nestedlist in heat_meas for element in nestedlist]
+            return heat_meas_dict#element for nestedlist in heat_meas for element in nestedlist]
+        except AttributeError:
+            message= ujson.loads(self.port.readline())
+            while message != dict:
+                message= ujson.loads(self.port.readline())
+                print(message)
+      
     
     def write(self, channel, scale, LPH = False):
         if LPH == True:

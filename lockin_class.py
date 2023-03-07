@@ -16,40 +16,47 @@ class lockin:
             return
         for retry in range(3):
             self.port.flushInput()
-            self.port.write(bytes('NAME? {0}\r\n'.format(channel), encoding = 'utf-8'))
-            #time.sleep(0.1)
-            
-            self.RDSSS()#supposed to be echo junk- 
-            #Edit Don't need to store it in a varaible, reads junk line to move onto next line
-            response = self.RDSSS()
-            #print(response)
-            #Typically the line of importance to check
-            #if blank -> wait longer
-            #if traceback -> reload program
-            #if lockin check - > cont
-            
-            #if response == '':
-                #time.sleep(3)
-                #response = self.RDSSS()
-            while_time = time.time()    
-            while response == '':
-                response = self.RDSSS()  
-                if while_time - time.time() > 10:
-                    print("it's hanging")
-                    break
-            if response == 'Traceback (most recent call last):':
-                print("importing")
-                self.port.write(bytes('import lockin_mux\r\n', encoding = 'utf-8'))
-                time.sleep(2)
-            data_back = None    
-        
-            if response == 'lockin {0}'.format(channel):
-                #print("comfirmed port")
+            if channel == None:
                 self.port.write(bytes('{0} {1}\r\n'.format(command,channel), encoding = 'utf-8'))
                 self.RDSSS() #z = RDSSS(self.port)#Supposed to be echo Junk
                 data_back = self.RDSSS()
                 while data_back == '':
                     data_back = self.RDSSS() 
+            else:
+                self.port.write(bytes('NAME? {0}\r\n'.format(channel), encoding = 'utf-8'))
+                #time.sleep(0.1)
+                
+                self.RDSSS()#supposed to be echo junk- 
+                #Edit Don't need to store it in a varaible, reads junk line to move onto next line
+                response = self.RDSSS()
+                #print(response)
+                #Typically the line of importance to check
+                #if blank -> wait longer
+                #if traceback -> reload program
+                #if lockin check - > cont
+                
+                #if response == '':
+                    #time.sleep(3)
+                    #response = self.RDSSS()
+                while_time = time.time()    
+                while response == '':
+                    response = self.RDSSS()  
+                    if while_time - time.time() > 10:
+                        print("it's hanging")
+                        break
+                if response == 'Traceback (most recent call last):':
+                    print("importing")
+                    self.port.write(bytes('import lockin_mux\r\n', encoding = 'utf-8'))
+                    time.sleep(2)
+                data_back = None    
+            
+                if response == 'lockin {0}'.format(channel):
+                    #print("comfirmed port")
+                    self.port.write(bytes('{0} {1}\r\n'.format(command,channel), encoding = 'utf-8'))
+                    self.RDSSS() #z = RDSSS(self.port)#Supposed to be echo Junk
+                    data_back = self.RDSSS()
+                    while data_back == '':
+                        data_back = self.RDSSS() 
                     
             if data_back != None and data_back != 'lockin {0}'.format(channel):
                 #print('made bad data_back check')
