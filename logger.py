@@ -25,13 +25,18 @@ Log_Pub_socket.bind("tcp://132.163.53.82:%s" % port)#address to linux box
 topic = 'graph'
 
 # Read config json (diode in this case), build csv with header
-config = ujson.load(open('diode_config.json', 'r'))
+config_diode = ujson.load(open('diode_config.json', 'r'))
+config_heater = ujson.loads(open('heater_config.json', 'r'))
+
 file = open("thermometry_log.csv", "a")
 
 with file as csvfile:
     fieldnames = ['TIME']
-    for key in config['sensors']:
+    for key in config_diode['sensors']:
         fieldnames.append(key)
+    for key in config_heater['heaters']:
+        fieldnames.append(key)
+        
     if os.stat("thermometry_log.csv").st_size == 0:
         print('Data log is empty, Creating Header \n' )
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
@@ -41,7 +46,7 @@ with file as csvfile:
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
     #Run True: Pull Data, Add time stamp to data, Publish data, write data to csv
     while True:
-        data = ujson.loads(send_n_receive(b'read diode'))
+        data = ujson.loads(send_n_receive(b'read all'))
         data[fieldnames[0]] = time.time()
         #Can't send jsons easily with pub/sub
         Log_Pub_socket.send_string(topic + ' ' +ujson.dumps((data)) )

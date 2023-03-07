@@ -118,12 +118,10 @@ proxy.setWidget(w)
 # add proxy widget to graphics layout widget
 p1 = win.addItem(proxy)
 
-
-print(len(curves))
-
 def update(data):
     global curves 
     if data is not None:
+        print(data)
         for key in curves:
             curve = curves[key]
             if key == '4K' or key == '40K':
@@ -138,9 +136,9 @@ class get_data_thread(pg.QtCore.QThread):
     newData = pg.QtCore.Signal(dict) #Defines newData data type
     def run(self):
         while True:
-            sensor_data = receive_data(socket, topicfilter)
+            new_sensor_data = receive_data(socket, topicfilter)
             # do NOT plot data from here!
-            self.newData.emit(sensor_data) #Emits signal to connected slots
+            self.newData.emit(new_sensor_data) #Emits signal to connected slots
             
 data_getter = get_data_thread()
 data_getter.newData.connect(update) #Connects signal to update slot
