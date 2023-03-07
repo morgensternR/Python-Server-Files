@@ -1,0 +1,8 @@
+{
+  "heaters" :  ["4PUMPA_HEATER","3PUMPA_HEATER", "4PUMPB_HEATER","3PUMPB_HEATER",
+                  "4SWITCHA_HEATER","3SWITCHA_HEATER","4SWITCHB_HEATER","3SWITCHB_HEATER", "STILL_HEATER"],
+   "qtpy pinout" : [[29, 28], [27,26], [24,25], [3,4], [20, 5], [20, 5], [20, 5], [20, 5], [20, 5]],
+   "machine number" : [0 , 1, 2, 3, -1, -1, -1, -1, -1],
+   "address" : [64, 69, 68, 65, 0,0,0,0,0]
+   }
+
